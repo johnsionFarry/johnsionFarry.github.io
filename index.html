@@ -18,6 +18,12 @@
             margin: 0 auto;
             padding: 45px;
         }
+        .markdown-body mark {
+            background-color: rgba(187, 128, 9, 0.15);
+            color: #e6edf3;
+            padding: 0.1em 0.3em;
+            border-radius: 3px;
+        }
         .markdown-body h1,
         .markdown-body h2,
         .markdown-body h3,
@@ -131,7 +137,54 @@
     </div>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/14.0.0/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked-highlight@2.1.0/lib/index.umd.min.js"></script>
     <script>
+        marked.use({
+            extensions: [{
+                name: 'highlight',
+                level: 'inline',
+                start(src) {
+                    return src.match(/==/)?.index;
+                },
+                tokenizer(src, tokens) {
+                    const rule = /^==([^=]+)==/;
+                    const match = rule.exec(src);
+                    if (match) {
+                        return {
+                            type: 'highlight',
+                            raw: match[0],
+                            text: match[1],
+                            tokens: this.lexer.inline(match[1])
+                        };
+                    }
+                },
+                renderer(token) {
+                    return `<mark>${this.parser.parseInline(token.tokens)}</mark>`;
+                }
+            }, {
+                name: 'strikethrough',
+                level: 'inline',
+                start(src) {
+                    return src.match(/~~/)?.index;
+                },
+                tokenizer(src, tokens) {
+                    const rule = /^~~([^~]+)~~/;
+                    const match = rule.exec(src);
+                    if (match) {
+                        return {
+                            type: 'strikethrough',
+                            raw: match[0],
+                            text: match[1],
+                            tokens: this.lexer.inline(match[1])
+                        };
+                    }
+                },
+                renderer(token) {
+                    return `<del>${this.parser.parseInline(token.tokens)}</del>`;
+                }
+            }]
+        });
+
         function getUrlParam(name) {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get(name);
@@ -145,7 +198,10 @@
         
         function renderMarkdown(content) {
             const contentElement = document.getElementById('content');
-            contentElement.innerHTML = marked.parse(content);
+            contentElement.innerHTML = marked.parse(content, {
+                breaks: true,
+                gfm: true
+            });
             
             const headings = contentElement.querySelectorAll('h1, h2, h3, h4');
             const tocList = document.getElementById('tocList');
