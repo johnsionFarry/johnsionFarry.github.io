@@ -3,13 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Markdown Viewer</title>
+    <title>开发快速手册</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css">
     <style>
+        body {
+            background-color: #0d1117;
+            margin: 0;
+            padding: 0;
+        }
         .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
             max-width: 980px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: 45px;
         }
         .file-list {
             position: fixed;
@@ -17,31 +24,55 @@
             top: 0;
             width: 200px;
             height: 100vh;
-            background: #f6f8fa;
-            border-right: 1px solid #e1e4e8;
+            background: #161b22;
+            border-right: 1px solid #30363d;
             padding: 1rem;
             overflow-y: auto;
+            z-index: 100;
         }
         .file-list h3 {
             margin-top: 0;
-            font-size: 16px;
+            font-size: 14px;
+            color: #e6edf3;
+            font-weight: 600;
         }
         .file-list ul {
             list-style: none;
             padding: 0;
+            margin: 0;
         }
         .file-list li {
-            margin: 0.5rem 0;
+            margin: 0.25rem 0;
         }
         .file-list a {
             text-decoration: none;
-            color: #0969da;
+            color: #79c0ff;
+            display: block;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 14px;
         }
         .file-list a:hover {
-            text-decoration: underline;
+            background: #21262d;
+            text-decoration: none;
+        }
+        .file-list a.active {
+            background: #1f6feb;
+            color: white;
         }
         .content {
             margin-left: 200px;
+        }
+        @media (max-width: 768px) {
+            .file-list {
+                display: none;
+            }
+            .content {
+                margin-left: 0;
+            }
+            .markdown-body {
+                padding: 20px;
+            }
         }
     </style>
 </head>
@@ -56,18 +87,15 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/14.0.0/marked.min.js"></script>
     <script>
-        // 获取URL参数
         function getUrlParam(name) {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get(name);
         }
         
-        // 渲染Markdown内容
         function renderMarkdown(content) {
             document.getElementById('content').innerHTML = marked.parse(content);
         }
         
-        // 加载并渲染指定的Markdown文件
         function loadMarkdownFile(filename) {
             fetch(filename)
                 .then(response => {
@@ -78,6 +106,7 @@
                 })
                 .then(text => {
                     renderMarkdown(text);
+                    updateActiveFile(filename);
                 })
                 .catch(error => {
                     console.error('Error loading Markdown file:', error);
@@ -85,41 +114,40 @@
                 });
         }
         
-        // 获取目录中的Markdown文件列表
         function getMarkdownFiles() {
-            // 这里简化处理，实际部署时可能需要后端支持或预先配置文件列表
-            // 暂时返回一个空数组，后续可以根据实际文件修改
-            return [];
+            return ['README.md'];
         }
         
-        // 生成文件列表
+        function updateActiveFile(filename) {
+            const links = document.querySelectorAll('#fileList a');
+            links.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '?file=' + encodeURIComponent(filename) || 
+                    (filename === 'README.md' && link.getAttribute('href') === '?file=README.md')) {
+                    link.classList.add('active');
+                }
+            });
+        }
+        
         function generateFileList() {
             const files = getMarkdownFiles();
             const fileListElement = document.getElementById('fileList');
-            
-            if (files.length === 0) {
-                fileListElement.innerHTML = '<li>No Markdown files found</li>';
-                return;
-            }
             
             fileListElement.innerHTML = files.map(file => 
                 `<li><a href="?file=${encodeURIComponent(file)}">${file}</a></li>`
             ).join('');
         }
         
-        // 初始化
         function init() {
             const fileParam = getUrlParam('file');
             if (fileParam) {
                 loadMarkdownFile(fileParam);
             } else {
-                // 默认显示README.md（如果存在）
                 loadMarkdownFile('README.md');
             }
             generateFileList();
         }
         
-        // 页面加载完成后初始化
         window.onload = init;
     </script>
 </body>
