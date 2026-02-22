@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Viewer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css">
+    <style>
+        .markdown-body {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .file-list {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 200px;
+            height: 100vh;
+            background: #f6f8fa;
+            border-right: 1px solid #e1e4e8;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+        .file-list h3 {
+            margin-top: 0;
+            font-size: 16px;
+        }
+        .file-list ul {
+            list-style: none;
+            padding: 0;
+        }
+        .file-list li {
+            margin: 0.5rem 0;
+        }
+        .file-list a {
+            text-decoration: none;
+            color: #0969da;
+        }
+        .file-list a:hover {
+            text-decoration: underline;
+        }
+        .content {
+            margin-left: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="file-list">
+        <h3>Markdown Files</h3>
+        <ul id="fileList"></ul>
+    </div>
+    <div class="content">
+        <div class="markdown-body" id="content"></div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/14.0.0/marked.min.js"></script>
+    <script>
+        // 获取URL参数
+        function getUrlParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+        
+        // 渲染Markdown内容
+        function renderMarkdown(content) {
+            document.getElementById('content').innerHTML = marked.parse(content);
+        }
+        
+        // 加载并渲染指定的Markdown文件
+        function loadMarkdownFile(filename) {
+            fetch(filename)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.text();
+                })
+                .then(text => {
+                    renderMarkdown(text);
+                })
+                .catch(error => {
+                    console.error('Error loading Markdown file:', error);
+                    document.getElementById('content').innerHTML = '<h1>Error</h1><p>Failed to load Markdown file.</p>';
+                });
+        }
+        
+        // 获取目录中的Markdown文件列表
+        function getMarkdownFiles() {
+            // 这里简化处理，实际部署时可能需要后端支持或预先配置文件列表
+            // 暂时返回一个空数组，后续可以根据实际文件修改
+            return [];
+        }
+        
+        // 生成文件列表
+        function generateFileList() {
+            const files = getMarkdownFiles();
+            const fileListElement = document.getElementById('fileList');
+            
+            if (files.length === 0) {
+                fileListElement.innerHTML = '<li>No Markdown files found</li>';
+                return;
+            }
+            
+            fileListElement.innerHTML = files.map(file => 
+                `<li><a href="?file=${encodeURIComponent(file)}">${file}</a></li>`
+            ).join('');
+        }
+        
+        // 初始化
+        function init() {
+            const fileParam = getUrlParam('file');
+            if (fileParam) {
+                loadMarkdownFile(fileParam);
+            } else {
+                // 默认显示README.md（如果存在）
+                loadMarkdownFile('README.md');
+            }
+            generateFileList();
+        }
+        
+        // 页面加载完成后初始化
+        window.onload = init;
+    </script>
+</body>
+</html>
