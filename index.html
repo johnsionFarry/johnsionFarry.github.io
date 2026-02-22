@@ -18,11 +18,19 @@
             margin: 0 auto;
             padding: 45px;
         }
-        .file-list {
+        .markdown-body h1,
+        .markdown-body h2,
+        .markdown-body h3,
+        .markdown-body h4,
+        .markdown-body h5,
+        .markdown-body h6 {
+            scroll-margin-top: 20px;
+        }
+        .sidebar {
             position: fixed;
             left: 0;
             top: 0;
-            width: 200px;
+            width: 260px;
             height: 100vh;
             background: #161b22;
             border-right: 1px solid #30363d;
@@ -30,41 +38,71 @@
             overflow-y: auto;
             z-index: 100;
         }
-        .file-list h3 {
+        .sidebar h3 {
             margin-top: 0;
+            margin-bottom: 12px;
             font-size: 14px;
             color: #e6edf3;
             font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        .file-list ul {
+        .sidebar-section {
+            margin-bottom: 1.5rem;
+        }
+        .sidebar ul {
             list-style: none;
             padding: 0;
             margin: 0;
         }
-        .file-list li {
+        .sidebar li {
             margin: 0.25rem 0;
         }
-        .file-list a {
+        .sidebar a {
             text-decoration: none;
             color: #79c0ff;
             display: block;
             padding: 4px 8px;
             border-radius: 6px;
             font-size: 14px;
+            transition: all 0.15s ease;
         }
-        .file-list a:hover {
+        .sidebar a:hover {
             background: #21262d;
             text-decoration: none;
         }
-        .file-list a.active {
+        .sidebar a.active {
             background: #1f6feb;
             color: white;
         }
+        .sidebar .toc-h1 {
+            font-weight: 600;
+            color: #e6edf3;
+        }
+        .sidebar .toc-h2 {
+            padding-left: 12px;
+            font-size: 13px;
+        }
+        .sidebar .toc-h3 {
+            padding-left: 24px;
+            font-size: 12px;
+            color: #8b949e;
+        }
+        .sidebar .toc-h4 {
+            padding-left: 36px;
+            font-size: 11px;
+            color: #8b949e;
+        }
+        .sidebar hr {
+            border: none;
+            border-top: 1px solid #30363d;
+            margin: 1rem 0;
+        }
         .content {
-            margin-left: 200px;
+            margin-left: 260px;
         }
         @media (max-width: 768px) {
-            .file-list {
+            .sidebar {
                 display: none;
             }
             .content {
@@ -77,9 +115,16 @@
     </style>
 </head>
 <body>
-    <div class="file-list">
-        <h3>Markdown Files</h3>
-        <ul id="fileList"></ul>
+    <div class="sidebar">
+        <div class="sidebar-section">
+            <h3>Files</h3>
+            <ul id="fileList"></ul>
+        </div>
+        <hr>
+        <div class="sidebar-section">
+            <h3>Table of Contents</h3>
+            <ul id="tocList"></ul>
+        </div>
     </div>
     <div class="content">
         <div class="markdown-body" id="content"></div>
@@ -92,8 +137,65 @@
             return urlParams.get(name);
         }
         
+        function generateId(text) {
+            return text.toLowerCase()
+                .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+        }
+        
         function renderMarkdown(content) {
-            document.getElementById('content').innerHTML = marked.parse(content);
+            const contentElement = document.getElementById('content');
+            contentElement.innerHTML = marked.parse(content);
+            
+            const headings = contentElement.querySelectorAll('h1, h2, h3, h4');
+            const tocList = document.getElementById('tocList');
+            tocList.innerHTML = '';
+            
+            headings.forEach((heading, index) => {
+                const id = generateId(heading.textContent) || `heading-${index}`;
+                heading.id = id;
+                
+                const li = document.createElement('li');
+                const a = document.createElement('a');
+                a.href = `#${id}`;
+                a.textContent = heading.textContent;
+                a.className = `toc-${heading.tagName.toLowerCase()}`;
+                
+                a.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const target = document.getElementById(id);
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        history.pushState(null, null, `#${id}`);
+                    }
+                });
+                
+                li.appendChild(a);
+                tocList.appendChild(li);
+            });
+            
+            updateTocActive();
+        }
+        
+        function updateTocActive() {
+            const headings = document.querySelectorAll('.markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4');
+            const tocLinks = document.querySelectorAll('#tocList a');
+            
+            let currentHeading = null;
+            
+            headings.forEach(heading => {
+                const rect = heading.getBoundingClientRect();
+                if (rect.top <= 100) {
+                    currentHeading = heading;
+                }
+            });
+            
+            tocLinks.forEach(link => {
+                link.classList.remove('active');
+                if (currentHeading && link.getAttribute('href') === `#${currentHeading.id}`) {
+                    link.classList.add('active');
+                }
+            });
         }
         
         function loadMarkdownFile(filename) {
@@ -146,6 +248,8 @@
                 loadMarkdownFile('README.md');
             }
             generateFileList();
+            
+            window.addEventListener('scroll', updateTocActive);
         }
         
         window.onload = init;
